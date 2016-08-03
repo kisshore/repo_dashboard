@@ -15,14 +15,12 @@ class LatestPackages:
     component_path = [ x[0] for x in os.walk(path)
                    if ((len(os.path.basename(x[0])) > 1) and
                    not (os.path.basename(x[0]) == 'main')) ]
-    print component_path
     return component_path
 
   def getComponentPackages(self, env, componentPaths):
     packagesList = {}
 
     for item in componentPaths:
-      print 'finding latest version for: ', os.path.basename(item)
       packagesVersion = os.listdir(item)
       packagesDup = [ x.split('_')[0] for x in packagesVersion ]
       packages = []
@@ -41,7 +39,6 @@ class LatestPackages:
         latestPackage = self.findLatestVersion(value)
         latestPackages[key] = latestPackage
 
-      #envPackages[env] = latestPackages
       packagesList[os.path.basename(item)] = latestPackages
 
     return packagesList
@@ -67,7 +64,6 @@ class LatestPackages:
     return latestPackage
 
 if __name__ == "__main__":
-  #sysTest = LatestPackages('System Test', '/opt/mirror/stable/release/1508a/mos-6.1/pool/main')
   sysProdPackages = {}
   sysTest = LatestPackages('System Test', '/opt/mirror/stable/release/1508a/mos-6.1/pool/main')
   componentPaths = sysTest.findComponentPath(sysTest.repoPath)
