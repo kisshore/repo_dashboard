@@ -2,6 +2,7 @@
 
 import os
 import re
+import json
 
 class LatestPackages:
 
@@ -14,35 +15,31 @@ class LatestPackages:
     component_path = [ x[0] for x in os.walk(path)
                    if ((len(os.path.basename(x[0])) > 1) and
                    not (os.path.basename(x[0]) == 'main')) ]
-    print component_path
     return component_path
 
   def getComponentPackages(self, env, componentPaths):
     packagesList = {}
 
     for item in componentPaths:
-      print 'finding latest version for: ', os.path.basename(item)
-      envPackages = {}
       packagesVersion = os.listdir(item)
       packagesDup = [ x.split('_')[0] for x in packagesVersion ]
       packages = []
+      latestPackages = {}
       [ packages.append(x) for x in packagesDup if x not in packages ]
 
       subPackage = {}
       for item1 in packages:
         subPackageList = []
         for x in packagesVersion:
-          if item1 in x:
+          if x.startswith(item1+'_'):
             subPackageList.append(x)
         subPackage[item1] = subPackageList
 
-      latestPackages = {}
       for key, value in subPackage.iteritems():
         latestPackage = self.findLatestVersion(value)
         latestPackages[key] = latestPackage
 
-      envPackages[env] = latestPackages
-      packagesList[os.path.basename(item)] = envPackages
+      packagesList[os.path.basename(item)] = latestPackages
 
     return packagesList
 
@@ -52,7 +49,11 @@ class LatestPackages:
     latestPackage = ''
     for item in packages:
       matchObj = re.search(r'(mos)(\d\d)', item)
-      versionDup.append(matchObj.group(2))
+      if matchObj:
+        versionDup.append(matchObj.group(2))
+      else:
+        matchObj = re.search(r'(mos)(\d)', item)
+        versionDup.append(matchObj.group(2))
     [ versions.append(x) for x in versionDup if x not in versions ]
     latestVersion = max(versions)
 
@@ -63,9 +64,16 @@ class LatestPackages:
     return latestPackage
 
 if __name__ == "__main__":
-  #sysTest = LatestPackages('System Test', '/opt/mirror/stable/release/1508a/mos-6.1/pool/main')
-  sysTest = LatestPackages('System Test', '/tmp/ks943g')
+  sysProdPackages = {}
+  sysTest = LatestPackages('System Test', '/opt/mirror/stable/release/1508a/mos-6.1/pool/main')
   componentPaths = sysTest.findComponentPath(sysTest.repoPath)
   packages = sysTest.getComponentPackages(sysTest.env, componentPaths)
+  sysProdPackages[sysTest.env] = packages
 
-  print packages
+  prod = LatestPackages('Production', '/opt/repos/aptly/public/aicv2-mos-prod/mos-6.1/pool/main')
+  componentPaths = prod.findComponentPath(prod.repoPath)
+  packages = prod.getComponentPackages(prod.env, componentPaths)
+  sysProdPackages[prod.env] = packages
+
+  with open('aic-2.5-latest-packages.json', 'w') as outfile:
+    json.dump(sysProdPackages, outfile)
